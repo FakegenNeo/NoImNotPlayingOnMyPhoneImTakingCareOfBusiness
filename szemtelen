@@ -1,0 +1,168 @@
+-- Credits to whoever made the "FE Hamsterball" script, as this uses scripting from it.
+
+game.MaterialService.Use2022Materials = false
+
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+ 
+local SPEED_MULTIPLIER = 20
+local JUMP_POWER = 80
+local JUMP_GAP = 0.3
+
+debounce = false
+
+function shockwave()
+	local shock = Instance.new("Part")
+	shock.Parent = game.Workspace
+	shock.Shape = Enum.PartType.Ball
+	shock.Material = Enum.Material.ForceField
+	shock.Position = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+	shock.Size = Vector3.new(11, 11, 11)
+	shock.Anchored = true
+	shock.Color = Color3.fromRGB(255, 255, 255)
+	shock.CastShadow = false
+	shock.CanCollide = false
+
+	local TweenService = game:GetService("TweenService")
+
+	local part = shock
+
+	local goalw = {}
+	goalw.Size = Vector3.new(50, 50, 50)
+	goalw.Transparency = 1
+
+	local tweenInfow = TweenInfo.new(0.5)
+
+	local goal = {}
+	goal.Size = Vector3.new(1, 1, 1)
+	goal.Transparency = 1
+
+	local tweenInfo = TweenInfo.new(0.25)
+
+	local tweenw = TweenService:Create(part, tweenInfow, goalw)
+
+	local tween = TweenService:Create(part, tweenInfo, goal)
+
+	tweenw:Play()
+	wait(0.5)
+		shock:Destroy()
+	tween:Play()
+	wait(0.25)
+end
+ 
+local character = game.Players.LocalPlayer.Character
+ 
+for i,v in ipairs(character:GetDescendants()) do
+   if v:IsA("BasePart") then
+       v.CanCollide = false
+   end
+end
+ 
+local ball = character.Torso
+ball.Shape = Enum.PartType.Ball
+ball.Size = Vector3.new(9, 9, 9)
+ball.Transparency = 0
+ball.Material = Enum.Material.Slate
+ball.Color = Color3.fromRGB(163, 162, 234)
+local humanoid = character:WaitForChild("Humanoid")
+local params = RaycastParams.new()
+params.FilterType = Enum.RaycastFilterType.Blacklist
+params.FilterDescendantsInstances = character
+
+local overlay = ball:Clone()
+overlay.Material = Enum.Material.Granite
+overlay.Parent = ball
+overlay.Transparency = 0.6
+overlay.CanCollide = false
+overlay.Color = Color3.fromRGB(255, 255, 255)
+overlay.Name = "Overlay"
+
+local weld = Instance.new("WeldConstraint")
+weld.Parent = overlay
+weld0 = ball
+weld1 = overlay
+
+local dec = Instance.new("Decal")
+dec.Parent = ball
+dec.Texture = "rbxassetid://8681671634"
+
+local sound = Instance.new("Sound")
+sound.Parent = ball
+sound.SoundId = "rbxassetid://1664711438"
+sound.Playing = true
+sound.Looped = true
+
+local sound2 = Instance.new("Sound")
+sound2.Parent = ball
+sound2.SoundId = "rbxassetid://6381290404"
+sound2.Name = "speak"
+sound2.Volume = "1"
+
+local sound3 = Instance.new("Sound")
+sound3.Parent = ball
+sound3.SoundId = "rbxassetid://5159141859"
+sound3.Name = "BADENDING"
+sound3.Volume = "1"
+sound3.Looped = true
+
+local tc = RunService.RenderStepped:Connect(function(delta)
+   ball.CanCollide = true
+   humanoid.PlatformStand = true
+if UserInputService:GetFocusedTextBox() then return end
+if UserInputService:IsKeyDown("W") then
+ball.RotVelocity -= Camera.CFrame.RightVector * delta * SPEED_MULTIPLIER
+end
+if UserInputService:IsKeyDown("A") then
+ball.RotVelocity -= Camera.CFrame.LookVector * delta * SPEED_MULTIPLIER
+end
+if UserInputService:IsKeyDown("S") then
+ball.RotVelocity += Camera.CFrame.RightVector * delta * SPEED_MULTIPLIER
+end
+if UserInputService:IsKeyDown("D") then
+ball.RotVelocity += Camera.CFrame.LookVector * delta * SPEED_MULTIPLIER
+end
+
+if UserInputService:IsKeyDown("E") then
+	if not debounce then
+		debounce = true
+			sound2:Play()
+			ball.Velocity = ball.Velocity + Vector3.new(Camera.CFrame.RightVector * delta * 50,60,0)
+			shockwave()
+		debounce = false
+	end
+end
+--ball.RotVelocity = ball.RotVelocity - Vector3.new(0,ball.RotVelocity.Y/50,0)
+end)
+ 
+UserInputService.JumpRequest:Connect(function()
+local result = workspace:Raycast(
+ball.Position,
+Vector3.new(
+0,
+-((ball.Size.Y/2)+JUMP_GAP),
+0
+),
+params
+)
+if result then
+ball.Velocity = ball.Velocity + Vector3.new(0,JUMP_POWER,0)
+end
+end)
+ 
+Camera.CameraSubject = ball
+humanoid.Died:Connect(function() tc:Disconnect() end)
+
+local a = ball
+local s = a.Sound
+local lastPos = a.Position
+game:GetService("RunService").Heartbeat:Connect(function(delta)
+	local x = (a.Position - lastPos).Magnitude * delta * 64
+	s.Volume = math.clamp(
+		x - 0.1 ,
+		0,
+		4
+	)
+	s.Playing = true
+	lastPos = a.Position
+end)
